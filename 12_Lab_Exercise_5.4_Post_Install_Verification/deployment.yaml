@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-http-server
+spec:
+  selector:
+    matchLabels:
+      app: go-http-server
+  template:
+    metadata:
+      labels:
+        app: go-http-server
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: go-http-server
+        imagePullPolicy: IfNotPresent
+        image: ttl.sh/jyothiram-go-http-server-instrumented:2h
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        resources:
+          requests:
+            cpu: "25m"
+          limits:
+            cpu: "50m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-http-server
+spec:
+  selector:
+    app: go-http-server
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

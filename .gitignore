@@ -1,0 +1,25 @@
+# Binaries and executables
+httpserver
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Certificates and keys (sensitive)
+*.key
+*.crt
+*.csr
+*.pem

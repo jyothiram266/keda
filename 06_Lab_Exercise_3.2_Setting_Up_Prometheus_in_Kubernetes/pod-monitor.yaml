@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: go-http-server
+  namespace: monitoring # Namespace where Prometheus Operator is installed
+  labels:
+    release: prometheus-stack # Adjust to match the label of your Prometheus instance
+spec:
+  selector:
+    matchLabels:
+      app: go-http-server
+  namespaceSelector:
+    matchNames:
+      - default # Namespace where the sample application is running
+  podMetricsEndpoints:
+    - port: http-metrics # Port name where the application exposes metrics
+      interval: 15s
+      path: /metrics
+      relabelings:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
