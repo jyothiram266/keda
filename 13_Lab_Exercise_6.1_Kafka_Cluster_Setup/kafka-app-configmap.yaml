@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-app-scripts
+  namespace: kafka
+data:
+  producer.py: |
+    import os
+    import time
+    import sys
+    from kafka import KafkaProducer
+
+    bootstrap_servers = os.environ.get('BOOTSTRAP_SERVERS', 'my-cluster-kafka-bootstrap.kafka.svc:9092')
+    topic = os.environ.get('TOPIC', 'my-topic')
+    message_count = int(os.environ.get('MESSAGE_COUNT', '20'))
+    delay_ms = int(os.environ.get('DELAY_MS', '100'))
+
+    print(f"Connecting to Kafka server: {bootstrap_servers}, topic: {topic}")
+    sys.stdout.flush()
+
+    for i in range(15):
+        try:
+            producer = KafkaProducer(bootstrap_servers=bootstrap_servers)
+            break
+        except Exception as e:
+            print(f"Failed to connect to Kafka (attempt {i+1}/15): {e}")
+            sys.stdout.flush()
+            time.sleep(5)
+    else:
+        print("Could not connect to Kafka after multiple attempts.")
+        sys.exit(1)
+
+    print("Connected to Kafka successfully.")
+    sys.stdout.flush()
+
+    for i in range(message_count):
+        msg = f"Hello from Python Kafka Producer-{i}"
+        producer.send(topic, value=msg.encode('utf-8'))
+        print(f"Message sent: {msg}")
+        sys.stdout.flush()
+        if delay_ms > 0:
+            time.sleep(delay_ms / 1000.0)
+
+    producer.flush()
+    producer.close()
+    print("Finished producing messages.")
+    sys.stdout.flush()
+
+  consumer.py: |
+    import os
+    import sys
+    import time
+    from kafka import KafkaConsumer
+
+    bootstrap_servers = os.environ.get('BOOTSTRAP_SERVERS', 'my-cluster-kafka-bootstrap.kafka.svc:9092')
+    topic = os.environ.get('TOPIC', 'my-topic')
+    group = os.environ.get('GROUP', 'my-group')
+
+    print(f"Python consumer starting, connecting to Kafka Server: bootstrapServer={bootstrap_servers}, topic={topic}, group={group}")
+    sys.stdout.flush()
+
+    for i in range(15):
+        try:
+            consumer = KafkaConsumer(
+                topic,
+                bootstrap_servers=bootstrap_servers,
+                group_id=group,
+                auto_offset_reset='latest'
+            )
+            break
+        except Exception as e:
+            print(f"Failed to connect to Kafka (attempt {i+1}/15): {e}")
+            sys.stdout.flush()
+            time.sleep(5)
+    else:
+        print("Could not connect to Kafka after multiple attempts.")
+        sys.exit(1)
+
+    print("Sarama consumer up and running!...")
+    sys.stdout.flush()
+
+    try:
+        for message in consumer:
+            val = message.value.decode('utf-8')
+            print(f"Message received: value={val}, topic={message.topic}, partition={message.partition}, offset={message.offset}")
+            sys.stdout.flush()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        consumer.close()

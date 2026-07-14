@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: kafka-amqstreams-producer-
+  namespace: kafka
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 1
+  template:
+    metadata:
+      name: kafka-amqstreams-producer
+      labels:
+        app: kafka-amqstreams-producer
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: kafka-amqstreams-producer
+        image: python:3.11-slim
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          pip install --user --no-cache-dir kafka-python-ng
+          python /app/producer.py
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        env:
+        - name: BOOTSTRAP_SERVERS
+          value: my-cluster-kafka-bootstrap.kafka.svc:9092
+        - name: TOPIC
+          value: my-topic
+        - name: MESSAGE_COUNT
+          value: "20"
+        - name: DELAY_MS
+          value: "100"
+        - name: HOME
+          value: /tmp
+        volumeMounts:
+        - name: script-vol
+          mountPath: /app
+      volumes:
+      - name: script-vol
+        configMap:
+          name: kafka-app-scripts

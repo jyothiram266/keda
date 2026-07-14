@@ -44,29 +44,21 @@ graph TD
 
 1. Create an HPA resource:
 This resource will autoscale your deployment based on CPU utilization.
-In this step, we are creating a Horizontal Pod Autoscaler (HPA) for our Kubernetes deployment using the
-```bash
-kubectl autoscale command. This HPA is configured to monitor the CPU utilization of your go-http-server
-```
-deployment. The command kubectl autoscale deployment go-http-server --min=2 --max=5
---cpu-percent=50 sets up the autoscaler with specific parameters: it maintains a minimum of 2 and a
-maximum of 5 pod replicas, and it initiates scaling actions when the average CPU utilization across all pods
-reaches 50%. When the CPU load exceeds the 50% threshold, the HPA will automatically increase the number
-of pod replicas, up to a maximum of 5, to distribute the load and maintain optimal performance. Conversely, if
-the CPU usage falls below this threshold, the HPA will reduce the number of replicas, ensuring efficient
-resource use.
+In this step, we are creating a Horizontal Pod Autoscaler (HPA) for our Kubernetes deployment using the `kubectl autoscale` command. This HPA is configured to monitor the CPU utilization of your `go-http-server` deployment. The command `kubectl autoscale deployment go-http-server --min=2 --max=5 --cpu-percent=50` sets up the autoscaler with specific parameters: it maintains a minimum of 2 and a maximum of 5 pod replicas, and it initiates scaling actions when the average CPU utilization across all pods reaches 50%. When the CPU load exceeds the 50% threshold, the HPA will automatically increase the number of pod replicas, up to a maximum of 5, to distribute the load and maintain optimal performance. Conversely, if the CPU usage falls below this threshold, the HPA will reduce the number of replicas, ensuring efficient resource use.
 ```bash
 kubectl autoscale deployment go-http-server --min=2 --max=5 --cpu-percent=50
 ```
+```text
 horizontalpodautoscaler.autoscaling/go-http-server autoscaled
+```
 2. Check that HPA is correctly deployed:
 ```bash
 kubectl get hpa
 ```
-NAME REFERENCE TARGETS MINPODS MAXPODS
-REPLICAS AGE
-go-http-server Deployment/go-http-server <unknown>/50% 2 5
-0 41s
+```text
+NAME             REFERENCE                   TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+go-http-server   Deployment/go-http-server   <unknown>/50%   2         5         0          41s
+```
 Note: Targets shows as <unknown> while the metric server is scraping the metrics. No action is needed and it will display the current metric value.
 
 ![HPA Initial Status](1.png)
@@ -93,10 +85,10 @@ pods.
 ```bash
 kubectl get hpa -w
 ```
-NAME REFERENCE TARGETS MINPODS MAXPODS
-REPLICAS AGE
-go-http-server Deployment/go-http-server 50%/50% 2 5
-4 12m
+```text
+NAME             REFERENCE                   TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+go-http-server   Deployment/go-http-server   50%/50%   2         5         4          12m
+```
 The above output shows that the Horizontal Pod Autoscaler (HPA) has scaled the go-http-server deployment
 to 4 replicas. This scaling action is a direct response to increased CPU utilization, which has surpassed the
 defined threshold of 50%. The important aspects to note here are the following:

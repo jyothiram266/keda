@@ -58,25 +58,29 @@ Kubernetes autoscaling responds to this by dynamically adjusting the number of p
 showcasing efficient resource management under varying load conditions.
 ```go
 package main
+
 import (
-"fmt"
-"log"
-"net/http"
+	"fmt"
+	"log"
+	"net/http"
 )
+
 // fib calculates the n-th Fibonacci number
 func fib(n int) int {
-if n <= 1 {
-return n
+	if n <= 1 {
+		return n
+	}
+	return fib(n-1) + fib(n-2)
 }
-return fib(n-1) + fib(n-2)
-}
+
 func handler(w http.ResponseWriter, r *http.Request) {
-n := 42 // A number that results in considerable computation
-fmt.Fprintf(w, "Fibonacci number at position %d is: %d\n", n, fib(n))
+	n := 42 // A number that results in considerable computation
+	fmt.Fprintf(w, "Fibonacci number at position %d is: %d\n", n, fib(n))
 }
+
 func main() {
-http.HandleFunc("/", handler)
-log.Fatal(http.ListenAndServe(":8080", nil))
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
 3. Create a Dockerfile with the contents below to containerize the sample application.
@@ -108,28 +112,28 @@ with the respective image name you created while executing the command in step 4
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-name: go-http-server
+  name: go-http-server
 spec:
-replicas: 1
-selector:
-matchLabels:
-app: go-http-server
-template:
-metadata:
-labels:
-app: go-http-server
-spec:
-containers:
-- name: go-http-server
-imagePullPolicy: IfNotPresent
-image: username/go-http-server:latest
-ports:
-- containerPort: 8080
-resources:
-requests:
-cpu: "25m"
-limits:
-cpu: "50m"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-http-server
+  template:
+    metadata:
+      labels:
+        app: go-http-server
+    spec:
+      containers:
+      - name: go-http-server
+        imagePullPolicy: IfNotPresent
+        image: username/go-http-server:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "25m"
+          limits:
+            cpu: "50m"
 ```
 7. Deploy the application:
 ```bash
@@ -139,8 +143,10 @@ kubectl apply -f deployment.yaml
 ```bash
 kubectl get deployments
 ```
-NAME READY UP-TO-DATE AVAILABLE AGE
-go-http-server 1/1 1 1 3m31s
+```text
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+go-http-server   1/1     1            1           3m31s
+```
 9. Set up port forwarding to access the application.
 In this step, we are establishing a port forwarding rule that redirects network traffic from a specific port on your
 local machine to the corresponding port on the Kubernetes pod hosting the Go HTTP server. By doing so, you
@@ -159,7 +165,9 @@ Forwarding from [::1]:8080 -> 8080
 ```bash
 curl http://localhost:8080/
 ```
+```text
 Fibonacci number at position 42 is: 267914296
+```
 Note: It can take a minute or two to display the output. Please be patient.
 
 ## Summary

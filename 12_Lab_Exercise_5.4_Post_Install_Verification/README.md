@@ -54,42 +54,41 @@ Lab 3.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-name: go-http-server
+  name: go-http-server
 spec:
-selector:
-matchLabels:
-app: go-http-server
-template:
-metadata:
-labels:
-app: go-http-server
-prometheus.io/scrape: "true"
-spec:
-containers:
-- name: go-http-server
-
-imagePullPolicy: IfNotPresent
-image: <username>/go-http-server:lab-03
-ports:
-- containerPort: 8080
-name: http-metrics
-resources:
-requests:
-cpu: "25m"
-limits:
-cpu: "50m"
+  selector:
+    matchLabels:
+      app: go-http-server
+  template:
+    metadata:
+      labels:
+        app: go-http-server
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: go-http-server
+        imagePullPolicy: IfNotPresent
+        image: <username>/go-http-server:lab-03
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        resources:
+          requests:
+            cpu: "25m"
+          limits:
+            cpu: "50m"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-name: go-http-server
+  name: go-http-server
 spec:
-selector:
-app: go-http-server
-ports:
-- protocol: TCP
-port: 8080
-targetPort: 8080
+  selector:
+    app: go-http-server
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
 ```
 2. Deploy Sample Application:
 ```bash
@@ -99,8 +98,10 @@ kubectl apply -f deployment.yaml
 ```bash
 kubectl get deployments -n default
 ```
-NAME READY UP-TO-DATE AVAILABLE AGE
-go-http-server 1/1 1 1 12s
+```text
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+go-http-server   1/1     1            1           12s
+```
 4. Create ScaledObject:
 Create scaledobject.yaml file with the contents below. This configuration creates a ScaledObject (a KEDA
 CRD, more about it in the next chapter) resource that targets the "go-http-server" deployment and uses the
@@ -111,21 +112,20 @@ specifies the target CPU utilization value for the deployment
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-name: go-http-server
-
-namespace: default
+  name: go-http-server
+  namespace: default
 spec:
-scaleTargetRef:
-apiVersion: apps/v1
-kind: Deployment
-name: go-http-server
-minReplicaCount: 1
-maxReplicaCount: 5
-triggers:
-- type: cpu
-metricType: Utilization
-metadata:
-value: "50"
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-http-server
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "50"
 ```
 5. Apply ScaledObject:
 ```bash
@@ -149,10 +149,10 @@ generation stops, cpu load will start decreasing and HPA will start scaling down
 ```bash
 kubectl get hpa keda-hpa-go-http-server --watch
 ```
-NAME REFERENCE TARGETS MINPODS MAXPODS
-REPLICAS
-keda-hpa-go-http-server Deployment/go-http-server 51%/50% 1 5
-4
+```text
+NAME                      REFERENCE                   TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-go-http-server   Deployment/go-http-server   51%/50%   1         5         4          2m
+```
 
 ![KEDA CPU Autoscaling](1.png)
 
@@ -170,7 +170,5 @@ In this exercise, we completed the following:
 behavior of the go-http-server deployment based on CPU utilization. Configured the autoscaling
 parameters, including the target CPU utilization and the minimum and maximum number of replicas.
 - Used the hey tool to generate load on the application and monitored the scaling behavior using the
-```bash
-kubectl get hpa command. We verified that KEDA responds to increased CPU load by scaling the
-```
+`kubectl get hpa` command. We verified that KEDA responds to increased CPU load by scaling the
 number of pods within the defined limits.

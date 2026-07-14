@@ -1,6 +1,3 @@
-# Lab Exercise 3.4 Testing Autoscaling with Custom Metrics
-
-
 # Lab Exercise 3.4: Testing Autoscaling with Custom Metrics
 
 In this exercise, we configure a Horizontal Pod Autoscaler (HPA) to dynamically scale our Go HTTP application replicas based on the rate of incoming HTTP requests per second, measured using custom Prometheus metrics.
@@ -46,24 +43,23 @@ deployment. The HPA will use the http_requests_per_second custom metric to make 
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-name: go-http-server-hpa
-namespace: default
+  name: go-http-server-hpa
+  namespace: default
 spec:
-scaleTargetRef:
-apiVersion: apps/v1
-kind: Deployment
-name: go-http-server
-minReplicas: 1
-maxReplicas: 10
-metrics:
-- type: Pods
-pods:
-metric:
-
-name: http_requests_per_second
-target:
-type: AverageValue
-averageValue: 10
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-http-server
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: 10
 ```
 2. Apply the HPA to your cluster:
 ```bash
@@ -91,10 +87,10 @@ the number of pods based on the http_requests_per_second metric.
 ```bash
 kubectl get hpa go-http-server-hpa --watch
 ```
-NAME REFERENCE TARGETS MINPODS MAXPODS
-REPLICAS AGE
-go-http-server-hpa Deployment/go-http-server 0/10 1 10
-1 6h18m
+```text
+NAME                 REFERENCE                   TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+go-http-server-hpa   Deployment/go-http-server   0/10      1         10        1          6h18m
+```
 Keep an eye on the REPLICAS column. Initially, the replica count should be 1. As the
 http_requests_per_second metric increases and surpasses the target value (10 in our case), the HPA
 should scale up the number of replicas.
@@ -107,9 +103,8 @@ Kubernetes issue.
 
 6. Clean up
 ```bash
-kubectl delete hpa/go-http-server-hpa deploy/go-http-server
+kubectl delete hpa/go-http-server-hpa deploy/go-http-server service/go-http-server
 ```
-service/go-http-server
 
 ## Troubleshooting
 

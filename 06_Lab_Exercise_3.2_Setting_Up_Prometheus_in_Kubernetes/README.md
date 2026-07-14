@@ -61,70 +61,58 @@ helm upgrade -i prometheus-stack prometheus-community/kube-prometheus-stack -n m
 kubectl get pods -n monitoring
 ```
 ```text
-NAME READY STATUS
-RESTARTS
-alertmanager-prometheus-stack-kube-prom-alertmanager-0 2/2 Running
-0
-prometheus-prometheus-stack-kube-prom-prometheus-0 2/2 Running
-0
-prometheus-stack-grafana-6c99cbfccb-8zc7r 3/3 Running
-0
-prometheus-stack-kube-prom-operator-7dfbbf8df-qtvjk 1/1 Running
-0
-prometheus-stack-kube-state-metrics-556d4c4c5d-wwjzk 1/1 Running
-0
-prometheus-stack-prometheus-node-exporter-xnzgk 1/1 Running
-0
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-prometheus-stack-kube-prom-alertmanager-0   2/2     Running   0          5m
+prometheus-prometheus-stack-kube-prom-prometheus-0       2/2     Running   0          5m
+prometheus-stack-grafana-6c99cbfccb-8zc7r                3/3     Running   0          5m
+prometheus-stack-kube-prom-operator-7dfbbf8df-qtvjk      1/1     Running   0          5m
+prometheus-stack-kube-state-metrics-556d4c4c5d-wwjzk     1/1     Running   0          5m
+prometheus-stack-prometheus-node-exporter-xnzgk          1/1     Running   0          5m
 ```
 3. Configure Prometheus to monitor the sample application:
 To allow Prometheus to discover and scrape metrics from your sample application, you need to define a
 PodMonitor resource. This resource specifies how Prometheus should find and scrape targets.
 Here's a breakdown of the functionality of each part of the PodMonitor resource:
-```yaml
-spec:
-```
-- selector.matchLabels: A map of key-value pairs used for selecting the pods to monitor.
-Pods that have labels matching the matchLabels are monitored by this PodMonitor. Here, it's
-targeting pods with the label app: go-http-server.
-- namespaceSelector.matchNames: A list of namespace names where the pods to be
-monitored are located. This allows you to scope the PodMonitor to specific namespaces. Here,
-it's targeting pods in the default namespace.
-- podMetricsEndpoints: A list of endpoints (ports, paths, intervals, and additional
-configurations) on the selected pods where Prometheus can scrape metrics.
-- port: The name of the port in the pod's container where the metrics endpoint is
-exposed. Here, it's http-metrics.
-- interval: The interval at which Prometheus scrapes metrics from this endpoint, set to
-15s.
-- path: The HTTP path to scrape for metrics, here set to /metrics.
-- relabelings: A list of relabel_configs to apply to samples before scraping, allowing for
-fine-grained control over metrics labeling. The labelmap action creates labels from the
-discovered metadata. In this case, it converts Kubernetes labels into Prometheus labels.
+- `spec`:
+  - `selector.matchLabels`: A map of key-value pairs used for selecting the pods to monitor.
+  Pods that have labels matching the matchLabels are monitored by this PodMonitor. Here, it's
+  targeting pods with the label app: go-http-server.
+  - `namespaceSelector.matchNames`: A list of namespace names where the pods to be
+  monitored are located. This allows you to scope the PodMonitor to specific namespaces. Here,
+  it's targeting pods in the default namespace.
+  - `podMetricsEndpoints`: A list of endpoints (ports, paths, intervals, and additional
+  configurations) on the selected pods where Prometheus can scrape metrics.
+  - `port`: The name of the port in the pod's container where the metrics endpoint is
+  exposed. Here, it's http-metrics.
+  - `interval`: The interval at which Prometheus scrapes metrics from this endpoint, set to
+  15s.
+  - `path`: The HTTP path to scrape for metrics, here set to /metrics.
+  - `relabelings`: A list of relabel_configs to apply to samples before scraping, allowing for
+  fine-grained control over metrics labeling. The labelmap action creates labels from the
+  discovered metadata. In this case, it converts Kubernetes labels into Prometheus labels.
 Create pod-monitor.yaml file with the contents below:
 ```yaml
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-name: go-http-server
-namespace: monitoring # Namespace where Prometheus Operator is installed
-labels:
-release: prometheus-stack # Adjust to match the label of your Prometheus
-```
-instance
-```yaml
+  name: go-http-server
+  namespace: monitoring # Namespace where Prometheus Operator is installed
+  labels:
+    release: prometheus-stack # Adjust to match the label of your Prometheus instance
 spec:
-selector:
-matchLabels:
-app: go-http-server
-namespaceSelector:
-matchNames:
-- default # Namespace where the sample application is running
-podMetricsEndpoints:
-- port: http-metrics # Port name where the application exposes metrics
-interval: 15s
-path: /metrics
-relabelings:
-- action: labelmap
-regex: __meta_kubernetes_pod_label_(.+)
+  selector:
+    matchLabels:
+      app: go-http-server
+  namespaceSelector:
+    matchNames:
+    - default # Namespace where the sample application is running
+  podMetricsEndpoints:
+  - port: http-metrics # Port name where the application exposes metrics
+    interval: 15s
+    path: /metrics
+    relabelings:
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
 ```
 4. Apply the PodMonitor resource:
 ```bash
@@ -134,9 +122,8 @@ kubectl apply -f pod-monitor.yaml
 To access the Prometheus UI locally, you can use kubectl port-forward to forward the Prometheus service port
 to your local machine.
 ```bash
-kubectl port-forward service/prometheus-stack-kube-prom-prometheus -n monitoring
+kubectl port-forward service/prometheus-stack-kube-prom-prometheus -n monitoring 9090:9090
 ```
-9090:9090
 Once the port forwarding is set up, you can access the Prometheus UI by navigating to http://localhost:9090 in
 your web browser.
 6. Testing: Verify Targets and Service Status:
@@ -148,8 +135,9 @@ application's endpoint is 'up'.
 7. Testing: Query Metrics in Prometheus UI:
 To confirm that Prometheus is correctly collecting metrics from your sample application, use the Prometheus
 query interface. Enter the following query and execute it:
-sum(rate(http_requests_total{namespace="default",job="monitoring/go-http-server"}
-[1m])) by (instance)
+```promql
+sum(rate(http_requests_total{namespace="default",job="monitoring/go-http-server"}[1m])) by (instance)
+```
 
 ![Query section](2.png)
 This query calculates the rate of HTTP requests per second for the past minute for each instance of the

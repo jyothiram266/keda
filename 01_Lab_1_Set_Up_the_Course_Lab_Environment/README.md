@@ -88,11 +88,11 @@ brew install hey
 hey --help
 ```
 To install Go Programming Language, execute these commands:
-1. Install hey:
+1. Install Go:
 ```bash
 brew install go
 ```
-2. Verify hey:
+2. Verify Go:
 ```bash
 go version
 ```
@@ -125,12 +125,12 @@ kubectl cluster-info --context kind-kind
 kubectl get ns
 ```
 ```text
-NAME STATUS AGE
-default Active 20s
-kube-node-lease Active 20s
-kube-public Active 20s
-kube-system Active 20s
-local-path-storage Active 13s
+NAME                 STATUS   AGE
+default              Active   20s
+kube-node-lease      Active   20s
+kube-public          Active   20s
+kube-system          Active   20s
+local-path-storage   Active   13s
 ```
 
 ### Linux Environment Setup
@@ -196,7 +196,7 @@ wget https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64
 ```bash
 chmod +x hey_linux_amd64
 ```
-3. Move the Helm binary to /usr/local/bin:
+3. Move the hey binary to /usr/local/bin:
 ```bash
 sudo mv hey_linux_amd64 /usr/local/bin/hey
 ```
@@ -262,12 +262,12 @@ kubectl cluster-info --context kind-kind
 kubectl get ns
 ```
 ```text
-NAME STATUS AGE
-default Active 20s
-kube-node-lease Active 20s
-kube-public Active 20s
-kube-system Active 20s
-local-path-storage Active 13s
+NAME                 STATUS   AGE
+default              Active   20s
+kube-node-lease      Active   20s
+kube-public          Active   20s
+kube-system          Active   20s
+local-path-storage   Active   13s
 ```
 
 ### Metric Server Setup in Kubernetes
@@ -291,7 +291,8 @@ helm upgrade --install metrics-server metrics-server/metrics-server -n kube-syst
 kubectl get pods -n kube-system -l=app.kubernetes.io/name=metrics-server
 ```
 ```text
-NAME READY STATUS RESTARTS AGE
-metrics-server-77dfcbd9f6-sgfgj 1/1 Running 0 2m44s
+NAME                              READY   STATUS    RESTARTS   AGE
+metrics-server-77dfcbd9f6-sgfgj   1/1     Running   0          2m44s
+```
 Congratulations, your environment is ready!
 ```

@@ -46,10 +46,12 @@ helm upgrade -i keda kedacore/keda --namespace keda --create-namespace
 ```bash
 kubectl get deployment -n keda
 ```
-NAME READY UP-TO-DATE AVAILABLE AGE
-keda-admission-webhooks 1/1 1 1 13m
-keda-operator 1/1 1 1 13m
-keda-operator-metrics-apiserver 1/1 1 1 13m
+```text
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+keda-admission-webhooks            1/1     1            1           13m
+keda-operator                      1/1     1            1           13m
+keda-operator-metrics-apiserver   1/1     1            1           13m
+```
 3. (Optional) Register your own CA in KEDA Operator Trusted Store.
 There are use cases where we need to use self-signed CAs (cases like AWS where their CA isn’t registered as
 trusted, etc.). Some scalers allow skipping the cert validation by setting the unsafeSsl parameter, but this isn’t
@@ -61,16 +63,13 @@ a. Create required CA & TLS certificates pairs. The commands below are used to g
 certificates for a Kubernetes service.
 ```bash
 openssl genrsa -out ca.key 2048
-openssl req -x509 -new -nodes -key ca.key -subj "/CN=example-ca" -days 3650 -out
+openssl req -x509 -new -nodes -key ca.key -subj "/CN=example-ca" -days 3650 -out ca.crt
 ```
-ca.crt
 ```bash
 openssl genrsa -out tls.key 2048
 openssl req -new -key tls.key -subj "/CN=keda-service" -out tls.csr
-openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out
+openssl x509 -req -in tls.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out tls.crt -days 365 -extfile <(printf "subjectAltName=DNS:keda-service,DNS:localhost")
 ```
-tls.crt -days 365 -extfile <(printf
-"subjectAltName=DNS:keda-service,DNS:localhost")
 ```bash
 rm tls.csr
 ```
@@ -107,11 +106,11 @@ Use the certificates generated above to create a Kubernetes secret called kedaor
 used by KEDA deployment to load certificates.
 ```bash
 kubectl create secret generic kedaorg-certs -n keda \
+  --from-file=ca.crt=./ca.crt \
+  --from-file=ca.key=./ca.key \
+  --from-file=tls.crt=./tls.crt \
+  --from-file=tls.key=./tls.key
 ```
---from-file=ca.crt=./ca.crt \
---from-file=ca.key=./ca.key \
---from-file=tls.crt=./tls.crt \
---from-file=tls.key=./tls.key
 d. Install KEDA by disabling certificate generation. This step depends on how KEDA is being installed. For
 Helm, execute the following command:
 ```bash

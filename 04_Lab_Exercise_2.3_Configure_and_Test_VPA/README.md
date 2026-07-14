@@ -51,15 +51,15 @@ Autoscaler (VPA) in 'Auto' mode to observe its autoscaling functionality.
 ```bash
 git clone https://github.com/kubernetes/autoscaler.git
 cd autoscaler/vertical-pod-autoscaler
-```
 ./hack/vpa-up.sh
+```
 ```bash
 kubectl get pods -n kube-system | grep "vpa"
 ```
 ```text
-vpa-admission-controller-754ccfdf99-5mjrh 1/1 Running 0
-vpa-recommender-667f9769fb-hsspf 1/1 Running 0
-vpa-updater-696b8787f9-vlfls 1/1 Running 0
+vpa-admission-controller-754ccfdf99-5mjrh   1/1     Running   0
+vpa-recommender-667f9769fb-hsspf            1/1     Running   0
+vpa-updater-696b8787f9-vlfls                1/1     Running   0
 ```
 2. Create a VPA Resource in 'Auto' Mode:
 To deploy VPA in 'Auto' mode, you will create a VPA configuration that will automatically update the resource
@@ -68,14 +68,14 @@ requests for the pods based on their usage. Create vpa-auto.yaml with the conten
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
 metadata:
-name: go-http-server-vpa
+  name: go-http-server-vpa
 spec:
-targetRef:
-apiVersion: "apps/v1"
-kind: Deployment
-name: go-http-server
-updatePolicy:
-updateMode: "Auto"
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: go-http-server
+  updatePolicy:
+    updateMode: "Auto"
 ```
 3. Apply the VPA Configuration:
 ```bash
@@ -86,18 +86,21 @@ Ensure that the VPA is running and targeting your deployment:
 ```bash
 kubectl get vpa
 ```
-NAME MODE CPU MEM PROVIDED AGE
-go-http-server-vpa Auto 90s
+```text
+NAME                 MODE   CPU   MEM   PROVIDED   AGE
+go-http-server-vpa   Auto   -     -     -          90s
+```
 
 ![VPA status](1.png)
 
 5. Use the command below, to check the default limits of the application.
 ```bash
-kubectl get pods
+kubectl get pods -o=custom-columns="NAME:.metadata.name,RESOURCES:.spec.containers[0].resources"
 ```
--o=custom-columns="NAME:.metadata.name,RESOURCES:.spec.containers[0].resources"
-NAME RESOURCES
-go-http-server-6f8c7c6c56-fs2qh map[limits:map[cpu:50m] requests:map[cpu:10m]]
+```text
+NAME                              RESOURCES
+go-http-server-6f8c7c6c56-fs2qh   map[limits:map[cpu:50m] requests:map[cpu:10m]]
+```
 6. In this step, we are using the hey tool to generate load on the application, similar to the test conducted for
 HPA. However, this time we will observe the behavior of the Vertical Pod Autoscaler (VPA) under load. As the
 CPU and memory demands increase due to the generated traffic, VPA will analyze these changing
@@ -112,36 +115,39 @@ using the following command:
 ```bash
 kubectl describe vpa go-http-server-vpa | grep "Status:" -A 100
 ```
+```text
 Status:
-Conditions:
-Last Transition Time: 2024-01-19T13:44:16Z
-Status: True
-Type: RecommendationProvided
-Recommendation:
-Container Recommendations:
-Container Name: go-http-server
-Lower Bound:
-Cpu: 25m
-Memory: 262144k
-Target:
-Cpu: 63m
-Memory: 262144k
-Uncapped Target:
-Cpu: 63m
-Memory: 262144k
-Upper Bound:
-Cpu: 167m
-Memory: 2191555258
-Events: <none>
+  Conditions:
+    Last Transition Time:  2024-01-19T13:44:16Z
+    Status:                True
+    Type:                  RecommendationProvided
+  Recommendation:
+    Container Recommendations:
+      Container Name:  go-http-server
+      Lower Bound:
+        Cpu:     25m
+        Memory:  262144k
+      Target:
+        Cpu:     63m
+        Memory:  262144k
+      Uncapped Target:
+        Cpu:     63m
+        Memory:  262144k
+      Upper Bound:
+        Cpu:     167m
+        Memory:  2191555258
+Events:  <none>
+```
 8. Observe changes in the pods' resource requests:
 Note that VPA might restart pods to apply new resource requests, which is part of its normal operation
 in 'Auto' mode.
 ```bash
-kubectl get pods
+kubectl get pods -o=custom-columns="NAME:.metadata.name,RESOURCES:.spec.containers[0].resources"
 ```
--o=custom-columns="NAME:.metadata.name,RESOURCES:.spec.containers[0].resources"
-NAME RESOURCES
-go-http-server-84b745454d-dtmn4 map[limits:map[cpu:62m] requests:map[cpu:25m memory:262144k]]
+```text
+NAME                              RESOURCES
+go-http-server-84b745454d-dtmn4   map[limits:map[cpu:62m] requests:map[cpu:25m memory:262144k]]
+```
 
 As you can observe from the above output, VPA has changed request limits from 50 to 62 and added memory requests of 256MB.
 

@@ -63,63 +63,71 @@ counter, tracking the total number of requests received by the server. We will u
 application on the basis of http requests.
 ```go
 package main
+
 import (
-"fmt"
-"log"
-"net/http"
-"strconv"
-"github.com/prometheus/client_golang/prometheus"
-"github.com/prometheus/client_golang/prometheus/promhttp"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
 var (
-// Define a counter metric for the /add handler
-addRequests = prometheus.NewCounterVec(
-prometheus.CounterOpts{
-Name: "http_requests_total",
-Help: "Total number of requests to the add handler.",
-},
-[]string{"endpoint"},
+	// Define a counter metric for the /add handler
+	addRequests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total number of requests to the add handler.",
+		},
+		[]string{"endpoint"},
+	)
 )
-)
+
 func init() {
-// Register custom metrics with Prometheus
-prometheus.MustRegister(addRequests)
+	// Register custom metrics with Prometheus
+	prometheus.MustRegister(addRequests)
 }
+
 // fib calculates the n-th Fibonacci number
 func fib(n int) int {
-if n <= 1 {
-return n
+	if n <= 1 {
+		return n
+	}
+	return fib(n-1) + fib(n-2)
 }
-return fib(n-1) + fib(n-2)
-}
-var count int
-func handler(w http.ResponseWriter, r *http.Request) {
-addRequests.WithLabelValues("/").Inc()
-count++
-fmt.Printf("Request number is: %d\n", count)
-defaultNumber := 42
-numberStr := r.URL.Query().Get("number")
 
-n := defaultNumber
-if numberStr != "" {
-parsedNumber, err := strconv.Atoi(numberStr)
-if err != nil {
-// Handle the error in case of bad input
-fmt.Fprintf(w, "Invalid number format: %s\n", numberStr)
-return
+var count int
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	addRequests.WithLabelValues("/").Inc()
+	count++
+	fmt.Printf("Request number is: %d\n", count)
+	defaultNumber := 42
+	numberStr := r.URL.Query().Get("number")
+
+	n := defaultNumber
+	if numberStr != "" {
+		parsedNumber, err := strconv.Atoi(numberStr)
+		if err != nil {
+			// Handle the error in case of bad input
+			fmt.Fprintf(w, "Invalid number format: %s\n", numberStr)
+			return
+		}
+		if parsedNumber != 0 {
+			n = parsedNumber
+		}
+	}
+	fmt.Fprintf(w, "Fibonacci number at position %d is: %d\n", n, fib(n))
 }
-if parsedNumber != 0 {
-n = parsedNumber
-}
-}
-fmt.Fprintf(w, "Fibonacci number at position %d is: %d\n", n, fib(n))
-}
+
 func main() {
-http.HandleFunc("/", handler)
-// Expose the default Prometheus metrics at `/metrics` endpoint
-http.Handle("/metrics", promhttp.Handler())
-fmt.Println("Starting server on port 8080")
-log.Fatal(http.ListenAndServe(":8080", nil))
+	http.HandleFunc("/", handler)
+	// Expose the default Prometheus metrics at `/metrics` endpoint
+	http.Handle("/metrics", promhttp.Handler())
+	fmt.Println("Starting server on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
 3. Create a Dockerfile with the contents below to containerize the sample application.
@@ -156,36 +164,36 @@ while executing the command in step 4.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-name: go-http-server
+  name: go-http-server
 spec:
-selector:
-matchLabels:
-app: go-http-server
-template:
-metadata:
-labels:
-app: go-http-server
-prometheus.io/scrape: "true"
-spec:
-containers:
-- name: go-http-server
-imagePullPolicy: IfNotPresent
-image: <username>/go-http-server:lab-03
-ports:
-- containerPort: 8080
-name: http-metrics
+  selector:
+    matchLabels:
+      app: go-http-server
+  template:
+    metadata:
+      labels:
+        app: go-http-server
+        prometheus.io/scrape: "true"
+    spec:
+      containers:
+      - name: go-http-server
+        imagePullPolicy: IfNotPresent
+        image: <username>/go-http-server:lab-03
+        ports:
+        - containerPort: 8080
+          name: http-metrics
 ---
 apiVersion: v1
 kind: Service
 metadata:
-name: go-http-server
+  name: go-http-server
 spec:
-selector:
-app: go-http-server
-ports:
-- protocol: TCP
-port: 8080
-targetPort: 8080
+  selector:
+    app: go-http-server
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
 ```
 8. Deploy the application:
 ```bash
@@ -195,8 +203,10 @@ kubectl apply -f deployment.yaml
 ```bash
 kubectl get deployments
 ```
-NAME READY UP-TO-DATE AVAILABLE AGE
-go-http-server 1/1 1 1 3m31s
+```text
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+go-http-server   1/1     1            1           3m31s
+```
 
 ![Verify deployment](1.png)
 
@@ -218,14 +228,18 @@ Forwarding from [::1]:8080 -> 8080
 ```bash
 curl http://localhost:8080/
 ```
+```text
 Fibonacci number at position 42 is: 267914296
+```
 12. Check for metrics from sample application.
 ```bash
 curl -s http://localhost:8080/metrics | grep "http_requests_total"
 ```
+```text
 # HELP http_requests_total Total number of requests to the add handler.
 # TYPE http_requests_total counter
 http_requests_total{endpoint="/"} 1
+```
 
 ![Verify metrics](2.png)
 

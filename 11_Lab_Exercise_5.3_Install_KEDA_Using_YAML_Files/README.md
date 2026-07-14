@@ -58,47 +58,41 @@ Kubernetes cluster with Metric Server installed as per Lab 1.
 ```bash
 kubectl apply --server-side --force-conflicts -f https://github.com/kedacore/keda/releases/download/v2.13.1/keda-2.13.1.yaml
 ```
+```text
 namespace/keda serverside-applied
-customresourcedefinition.apiextensions.k8s.io/cloudeventsources.eventing.keda.sh
-serverside-applied
-customresourcedefinition.apiextensions.k8s.io/clustertriggerauthentications.keda.
-sh serverside-applied
-customresourcedefinition.apiextensions.k8s.io/scaledjobs.keda.sh
-serverside-applied
-customresourcedefinition.apiextensions.k8s.io/scaledobjects.keda.sh
-serverside-applied
-customresourcedefinition.apiextensions.k8s.io/triggerauthentications.keda.sh
-serverside-applied
+customresourcedefinition.apiextensions.k8s.io/cloudeventsources.eventing.keda.sh serverside-applied
+customresourcedefinition.apiextensions.k8s.io/clustertriggerauthentications.keda.sh serverside-applied
+customresourcedefinition.apiextensions.k8s.io/scaledjobs.keda.sh serverside-applied
+customresourcedefinition.apiextensions.k8s.io/scaledobjects.keda.sh serverside-applied
+customresourcedefinition.apiextensions.k8s.io/triggerauthentications.keda.sh serverside-applied
 serviceaccount/keda-operator serverside-applied
 role.rbac.authorization.k8s.io/keda-operator serverside-applied
-clusterrole.rbac.authorization.k8s.io/keda-external-metrics-reader
-serverside-applied
+clusterrole.rbac.authorization.k8s.io/keda-external-metrics-reader serverside-applied
 clusterrole.rbac.authorization.k8s.io/keda-operator serverside-applied
 rolebinding.rbac.authorization.k8s.io/keda-operator serverside-applied
 rolebinding.rbac.authorization.k8s.io/keda-auth-reader serverside-applied
-clusterrolebinding.rbac.authorization.k8s.io/keda-hpa-controller-external-metrics
-serverside-applied
+clusterrolebinding.rbac.authorization.k8s.io/keda-hpa-controller-external-metrics serverside-applied
 clusterrolebinding.rbac.authorization.k8s.io/keda-operator serverside-applied
-clusterrolebinding.rbac.authorization.k8s.io/keda-system-auth-delegator
-serverside-applied
+clusterrolebinding.rbac.authorization.k8s.io/keda-system-auth-delegator serverside-applied
 service/keda-admission-webhooks serverside-applied
 service/keda-metrics-apiserver serverside-applied
 service/keda-operator serverside-applied
 deployment.apps/keda-admission serverside-applied
 deployment.apps/keda-metrics-apiserver serverside-applied
 deployment.apps/keda-operator serverside-applied
-apiservice.apiregistration.k8s.io/v1beta1.external.metrics.k8s.io
-serverside-applied
-validatingwebhookconfiguration.admissionregistration.k8s.io/keda-admission
-serverside-applied
+apiservice.apiregistration.k8s.io/v1beta1.external.metrics.k8s.io serverside-applied
+validatingwebhookconfiguration.admissionregistration.k8s.io/keda-admission serverside-applied
+```
 2. Verify KEDA pods are running in the cluster using the command below:
 ```bash
 kubectl get deployment -n keda
 ```
-NAME READY UP-TO-DATE AVAILABLE AGE
-keda-admission-webhooks 1/1 1 1 5m
-keda-operator 1/1 1 1 5m
-keda-operator-metrics-apiserver 1/1 1 1 5m
+```text
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+keda-admission-webhooks            1/1     1            1           5m
+keda-operator                      1/1     1            1           5m
+keda-operator-metrics-apiserver   1/1     1            1           5m
+```
 3. Modifying KEDA configuration:
 For modifying any KEDA configuration, such as KEDA_HTTP_DEFAULT_TIMEOUT, changing replicas and
 command line flags, you can directly edit the above Kubernetes deployments using

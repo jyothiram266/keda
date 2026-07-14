@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-amqstreams-consumer
+  namespace: kafka
+  labels:
+    app: kafka-amqstreams-consumer
+spec:
+  selector:
+    matchLabels:
+      app: kafka-amqstreams-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-amqstreams-consumer
+    spec:
+      containers:
+      - name: kafka-amqstreams-consumer
+        image: python:3.11-slim
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          pip install --user --no-cache-dir kafka-python-ng
+          python /app/consumer.py
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        env:
+        - name: BOOTSTRAP_SERVERS
+          value: my-cluster-kafka-bootstrap.kafka.svc:9092
+        - name: TOPIC
+          value: my-topic
+        - name: GROUP
+          value: my-group
+        - name: HOME
+          value: /tmp
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        volumeMounts:
+        - name: script-vol
+          mountPath: /app
+      volumes:
+      - name: script-vol
+        configMap:
+          name: kafka-app-scripts
