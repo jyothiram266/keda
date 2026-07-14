@@ -2,6 +2,29 @@
 
 This exercise introduces the configuration and deployment of **ScaledJobs** using **KEDA** to dynamically manage batch workloads in response to messages in a RabbitMQ queue. You will create a `ScaledJob` resource that instructs KEDA to automatically scale job instances based on the volume of messages, showcasing a practical implementation of event-driven autoscaling for run-to-completion workloads in Kubernetes.
 
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    subgraph K8s [Kubernetes Cluster]
+        subgraph NS_RM [rabbitmq Namespace]
+            RM_Operator[RabbitMQ Cluster Operator] -->|Manages| RM_Cluster[RabbitMQ Cluster]
+        end
+
+        subgraph NS_DEF [default Namespace]
+            Producer[Producer Job] -->|Publishes messages to testqueue| RM_Cluster
+            KEDA_Op[KEDA Operator] -->|1. Polls queue length| RM_Cluster
+            KEDA_Op -->|2. Scales up/down| ScaledJob[KEDA ScaledJob]
+            ScaledJob -->|3. Spawns| ConsumerJobs[Consumer Jobs]
+            ConsumerJobs -->|4. Pulls & Processes message| RM_Cluster
+            
+            CM[ConfigMap: consumer-script-config] -.->|Mounts script| ConsumerJobs
+            Secret[Secret: keda-rabbitmq-secret] -.->|Provides connection URL| ConsumerJobs
+            SecretTarget[TriggerAuthentication] -.->|References secret| KEDA_Op
+        end
+    end
+```
+
 ---
 
 ## Prerequisites
