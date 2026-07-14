@@ -62,7 +62,7 @@ kafka-amqstreams-consumer   0/0     0            0           41h
 3. Generate messages using producer:
 As done in the previous exercise, execute the same command to produce Kafka messages. But this time, set the `MESSAGE_COUNT` value to 3000.
 ```bash
-sed 's/value: "20"/value: "3000"/' ../13_Lab_Exercise_6.1_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
+sed 's/value: "20"/value: "3000"/' ../13_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
 ```
 
 4. Monitor auto scaling behavior:

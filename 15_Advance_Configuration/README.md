@@ -134,7 +134,7 @@ kubectl apply -f scaled-object-cooldown-period.yaml
 
 Generate Kafka messages using the producer job:
 ```bash
-sed 's/value: "20"/value: "3000"/' ../13_Lab_Exercise_6.1_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
+sed 's/value: "20"/value: "3000"/' ../13_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
 ```
 
 Monitor the HPA and scaling events in separate terminals:
@@ -199,7 +199,7 @@ kubectl apply -f scaled-object-ideal-replica-count.yaml
 
 Generate messages again using the producer:
 ```bash
-sed 's/value: "20"/value: "3000"/' ../13_Lab_Exercise_6.1_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
+sed 's/value: "20"/value: "3000"/' ../13_Kafka_Cluster_Setup/producer.yaml | kubectl create -f -
 ```
 
 Monitor HPA and event scaling logs:
