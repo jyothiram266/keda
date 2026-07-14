@@ -179,7 +179,7 @@ Create a file named `rabbitmq-producer.yaml`:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: producer-program-
+  generateName: producer-program
 spec:
   template:
     metadata:
