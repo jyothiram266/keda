@@ -197,6 +197,8 @@ spec:
    > [!NOTE]
    > Notice the `AUTHENTICATIONS` column points to `rabbitmq-trigger-auth`. Here, KEDA references the secret directly via `secretTargetRef` without relying on container environment variables.
 
+   ![KEDA Secret TriggerAuthentication Verification](1.png)
+
 ---
 
 ## 🧹 Clean Up
