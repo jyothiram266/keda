@@ -191,6 +191,8 @@ spec:
    > [!NOTE]
    > The `READY: True` status confirms that KEDA successfully inspected the `consumer-program` deployment, extracted the `RABBITMQ_URL` environment variable from the designated container, resolved the secret value, and established a connection to the RabbitMQ cluster.
 
+   ![KEDA Basic Authentication Verification](1.png)
+
 ---
 
 ## 🧹 Clean Up
