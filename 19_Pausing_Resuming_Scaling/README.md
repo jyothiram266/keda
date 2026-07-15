@@ -243,6 +243,8 @@ To resume autoscaling and let the consumer jobs process the pending queue messag
    ...
    ```
 
+   ![KEDA Paused/Resumed Autoscaling Verification](1.png)
+
 ---
 
 ## 🧹 Clean Up
