@@ -1,0 +1,27 @@
+apiVersion: keda.sh/v1alpha1
+kind: ClusterTriggerAuthentication
+metadata:
+  name: rabbitmq-auth
+spec:
+  secretTargetRef:
+  - parameter: host
+    key: host
+    name: keda-rabbitmq-secret
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-rabbitmq
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: consumer-program
+  triggers:
+  - type: rabbitmq
+    metadata:
+      protocol: amqp
+      queueName: testqueue
+      queueLength: "5"
+    authenticationRef:
+      kind: ClusterTriggerAuthentication
+      name: rabbitmq-auth

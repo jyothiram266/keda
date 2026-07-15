@@ -1,99 +1,245 @@
-# Lab Exercise 8.5 Understanding and Configuring ClusterTriggerAuthentication
+# Lab Exercise 8.5: Understanding and Configuring ClusterTriggerAuthentication
 
+This exercise explores KEDA's cluster-scoped authentication resource: **ClusterTriggerAuthentication**.
 
-# Lab Exercise 8.5: Understanding and Configuring
+Unlike a namespace-scoped `TriggerAuthentication`, a `ClusterTriggerAuthentication` can be reused by `ScaledObject` resources across any namespace in the cluster. This avoids repeating authentication configs in every namespace.
 
-ClusterTriggerAuthentication
-In this exercise, we will explore how to use Kubernetes secrets with ClusterTriggerAuthentication CRD for
-secure authentication.
+---
+
+## 🏗️ Architecture & Secret Namespace Resolution Flow
+
+```mermaid
+graph TD
+    subgraph Kubernetes Cluster
+        KEDA[KEDA Operator]
+        Deployment[Deployment: consumer-program]
+        Secret[Secret: keda-rabbitmq-secret]
+        ConfigMap[ConfigMap: consumer-script-config]
+        ScaledObject[ScaledObject: keda-rabbitmq]
+    end
+
+    ClusterAuth[ClusterTriggerAuthentication: rabbitmq-auth]
+
+    subgraph RabbitMQ Namespace
+        RMQ[RabbitMQ Cluster]
+    end
+
+    Deployment -->|Mounts| ConfigMap
+    ScaledObject -->|scaleTargetRef| Deployment
+    ScaledObject -->|authenticationRef| ClusterAuth
+    ClusterAuth -.->|By default resolves secrets in| KEDA_NS[KEDA Operator Namespace: keda]
+    KEDA_NS -.->|Throws error: Secret not found| Secret
+    KEDA -->|Reads spec| ScaledObject
+    KEDA -->|Set env KEDA_CLUSTER_OBJECT_NAMESPACE=default| KEDA
+    KEDA -->|Resolves secret from default namespace| Secret
+    KEDA -->|Connects & Polls| RMQ
+```
+
+### The Namespace Gotcha
+Because `ClusterTriggerAuthentication` is cluster-scoped, it has no native namespace. By default, KEDA resolves its secret references in the namespace where the KEDA operator itself is installed (usually `keda`).
+If the target Secret resides in a different namespace (e.g. `default`), KEDA will fail to locate it, and the `ScaledObject` will show `READY: False`. To fix this, we must configure KEDA operator's environment variable `KEDA_CLUSTER_OBJECT_NAMESPACE` to look in the target namespace.
+
+---
 
 ## Prerequisites
 
 1. Basic understanding of Kubernetes and KEDA.
-2. Access to a Kubernetes environment with KEDA and Metric Server installed as per Lab 5.
-3. Completion of Lab Exercises 8.1, 8.2, 8.3 and 8.4.
+2. Running RabbitMQ Cluster (deployed under the `rabbitmq` namespace as per previous labs).
+3. Completion of Lab Exercise 8.4.
 
-## Lab Exercise
+---
 
-1. Create ScaledObject and ClusterTriggerAuthentication
-Create a file name scaled-object-cluster-trigger.yaml with the following contents and apply it using
-the command below.
-Please note the below ScaledObject is being created in the keda namespace.
+## 📂 Manifests
+
+### 1. RabbitMQ Credentials Secret (`secret.yaml`)
+Stores the base64-encoded AMQP connection string in the `default` namespace.
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keda-rabbitmq-secret
+type: Opaque
+data:
+  host: YW1xcDovL2RlZmF1bHRfdXNlcl9obUdaRmhkZXdxNjVQNGRJZHg3OnFjOThuNGlHRDdNWVhNQlZGY0lPMm10QjV2b0R1Vl9uQHJhYmJpdG1xLWNsdXN0ZXIucmFiYml0bXEuc3ZjLmNsdXN0ZXIubG9jYWw6NTY3Mg==
+```
+
+### 2. Consumer Workload (`consumer.yaml`)
+Deploys the consumer workload in the `default` namespace.
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: consumer-script-config
+data:
+  consumer-script.sh: |
+    #!/bin/bash
+    currentMessage=""
+    handle_sigterm() {
+      if [ -n "$currentMessage" ]; then
+        echo "SIGTERM signal received while processing a message."
+        curl -X POST http://result-analyzer-service:8080/kill/count -s
+        echo "Kill count HTTP request sent."
+      else
+        echo "SIGTERM signal received, but no message was being processed."
+      fi
+      exit 0
+    }
+    trap 'handle_sigterm' SIGTERM
+    while true; do
+      echo -e "Waiting for message...\n"
+      if ! currentMessage=$(amqp-consume --url="$RABBITMQ_URL" -q "testqueue" -c 1 cat); then
+        echo -e "Error occurred during message consumption. Exiting...\n"
+        continue
+      fi
+      echo -e "Message received, processing: $currentMessage \n"
+      i=1
+      while [ $i -le 360 ]; do
+        echo "Encoding video $i"
+        sleep 1
+        i=$((i+1))
+      done
+      currentMessage=""
+      curl -X POST http://result-analyzer-service:8080/create/count -s
+      echo -e "Waiting for next message...\n"
+    done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer-program
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer-program
+  template:
+    metadata:
+      labels:
+        app: consumer-program
+    spec:
+      containers:
+      - name: consumer-program
+        image: ghcr.io/kedify/blog05-cli-consumer-program:latest
+        command: ["/bin/bash"]
+        args: ["/scripts/consumer-script.sh"]
+        volumeMounts:
+        - name: script-volume
+          mountPath: /scripts
+        env:
+        - name: RABBITMQ_URL
+          valueFrom:
+            secretKeyRef:
+              name: keda-rabbitmq-secret
+              key: host
+      volumes:
+      - name: script-volume
+        configMap:
+          name: consumer-script-config
+```
+
+### 3. ClusterTriggerAuthentication & ScaledObject (`scaled-object-cluster-trigger.yaml`)
+Configures a cluster-scoped `ClusterTriggerAuthentication` and links it to a `ScaledObject` in the `default` namespace.
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ClusterTriggerAuthentication
 metadata:
-name: rabbitmq-auth
+  name: rabbitmq-auth
 spec:
-secretTargetRef:
-- parameter: host
-key: host
-name: keda-rabbitmq-secret
+  secretTargetRef:
+  - parameter: host
+    key: host
+    name: keda-rabbitmq-secret
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-
-name: keda-rabbitmq
-namespace: keda
+  name: keda-rabbitmq
+  namespace: default
 spec:
-scaleTargetRef:
-name: consumer-program
-triggers:
-- type: rabbitmq
-metadata:
-protocol: amqp
-queueName: testqueue
-queueLength: "5"
-authenticationRef:
-kind: ClusterTriggerAuthentication
-name: rabbitmq-auth
-```
-```bash
-kubectl apply -f scaled-object-cluster-trigger.yaml
-```
-2. Verify ScaledObject:
-Execute the following command to view the result.
-```bash
-kubectl get scaledobjects.keda.sh keda-rabbitmq
-```
-NAME SCALETARGETKIND SCALETARGETNAME MIN MAX TRIGGERS
-AUTHENTICATION READY ACTIVE FALLBACK PAUSED AGE
-keda-rabbitmq apps/v1.Deployment consumer-program rabbitmq
-False False Unknown Unknown 7s
-From the above output, the READY column is marked as false because the ClusterTriggerAuthentication is
-searching for the keda-rabbitmq-secret in the keda namespace where KEDA is installed, but the secret
-exists in the default namespace (created during lab setup). To resolve this, configure the KEDA operator to
-recognize the default namespace by setting KEDA_CLUSTER_OBJECT_NAMESPACE env variable to default.
-3. Delete ScaledObject:
-```bash
-kubectl delete -f scaled-object-cluster-trigger.yaml
-```
-4. Editing KEDA Operator:
-Execute the following command to set the environment variable value to default.
-```bash
-kubectl set env -n keda deployment/keda-operator -c keda-operator
-```
-KEDA_CLUSTER_OBJECT_NAMESPACE=default
-5. Re-Apply ScaledObject and observe result:
-```bash
-kubectl apply -f scaled-object-cluster-trigger.yaml
-kubectl get scaledobjects.keda.sh keda-rabbitmq
-```
-NAME SCALETARGETKIND SCALETARGETNAME MIN MAX TRIGGERS
-AUTHENTICATION READY ACTIVE FALLBACK PAUSED AGE
-keda-rabbitmq apps/v1.Deployment consumer-program rabbitmq
-True False Unknown Unknown 7s
-6. Clean up:
-```bash
-kubectl delete -f scaled-object-cluster-trigger.yaml
+  scaleTargetRef:
+    name: consumer-program
+  triggers:
+  - type: rabbitmq
+    metadata:
+      protocol: amqp
+      queueName: testqueue
+      queueLength: "5"
+    authenticationRef:
+      kind: ClusterTriggerAuthentication
+      name: rabbitmq-auth
 ```
 
-## Summary
+---
 
-In this exercise, we configured ClusterTriggerAuthentication with Kubernetes secrets for secure, cluster-wide
-authentication in KEDA. The exercise guided you through creating a ClusterTriggerAuthentication and a
-ScaledObject for a RabbitMQ scaler. Upon initial deployment, the READY status was false due to namespace
-mismatch. By adjusting the KEDA operator's environment variable (KEDA_CLUSTER_OBJECT_NAMESPACE) to
-the correct namespace and reapplying the configuration, the READY status successfully transitioned to true,
-validating the correct setup and functionality of cluster-wide authentication in KEDA.
+## 🛠️ Step-by-Step Lab Walkthrough
+
+### 1. Deploy the Workload
+1. Deploy the Secret, ConfigMap, and Deployment in the `default` namespace:
+   ```bash
+   kubectl apply -f secret.yaml
+   kubectl apply -f consumer.yaml
+   ```
+
+2. Confirm the consumer pod is running:
+   ```bash
+   kubectl get pods
+   ```
+
+### 2. Deploy ClusterTriggerAuthentication & ScaledObject (Initial Attempt)
+1. Apply the combined configuration:
+   ```bash
+   kubectl apply -f scaled-object-cluster-trigger.yaml
+   ```
+
+2. Check the status of the ScaledObject:
+   ```bash
+   kubectl get scaledobjects.keda.sh keda-rabbitmq
+   ```
+   *Expected Output:*
+   ```text
+   NAME            SCALETARGETKIND      SCALETARGETNAME    MIN   MAX   READY   ACTIVE    FALLBACK   PAUSED   TRIGGERS   AUTHENTICATIONS   AGE
+   keda-rabbitmq   apps/v1.Deployment   consumer-program               False   Unknown   False      False    rabbitmq   rabbitmq-auth     8s
+   ```
+   > [!WARNING]
+   > Notice that `READY` is `False`. The KEDA operator controller log will show a secret-not-found error because KEDA is searching for `keda-rabbitmq-secret` in the `keda` namespace.
+
+---
+
+### 3. Configure the KEDA Operator
+To resolve this, set the KEDA operator's environment variable `KEDA_CLUSTER_OBJECT_NAMESPACE` to the `default` namespace so it can locate the secret.
+
+1. Update the operator deployment environment:
+   ```bash
+   kubectl set env -n keda deployment/keda-operator KEDA_CLUSTER_OBJECT_NAMESPACE=default
+   ```
+
+2. Wait for the KEDA operator pod to restart and become ready:
+   ```bash
+   kubectl get pods -n keda -w
+   ```
+
+3. Recheck the status of your ScaledObject:
+   ```bash
+   kubectl get scaledobjects.keda.sh keda-rabbitmq
+   ```
+   *Expected Output:*
+   ```text
+   NAME            SCALETARGETKIND      SCALETARGETNAME    MIN   MAX   READY   ACTIVE    FALLBACK   PAUSED   TRIGGERS   AUTHENTICATIONS   AGE
+   keda-rabbitmq   apps/v1.Deployment   consumer-program               True    Unknown   False      False    rabbitmq   rabbitmq-auth     12s
+   ```
+   > [!NOTE]
+   > Now `READY` is `True`. The operator successfully resolved the secret from the `default` namespace!
+
+---
+
+## 🧹 Clean Up
+
+To clean up all resources created in this exercise and restore KEDA operator environment:
+```bash
+kubectl delete -f scaled-object-cluster-trigger.yaml
+kubectl delete -f consumer.yaml
+kubectl delete -f secret.yaml
+kubectl set env -n keda deployment/keda-operator KEDA_CLUSTER_OBJECT_NAMESPACE-
+```
+> [!NOTE]
+> The final command removes the custom namespace setting from the operator.
