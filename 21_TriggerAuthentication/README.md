@@ -196,6 +196,8 @@ spec:
    > [!NOTE]
    > Notice the `AUTHENTICATIONS` column points to `rabbitmq-trigger-auth`. KEDA uses this reference to resolve credentials dynamically from the workload container environment.
 
+   ![KEDA TriggerAuthentication Verification](1.png)
+
 ---
 
 ## 🧹 Clean Up
