@@ -185,11 +185,13 @@ spec:
    ```bash
    kubectl exec -ti -n vault vault-0 -- vault kv put secret/rabbitmq host=amqp://default_user_hmGZFhdewq65P4dIdx7:qc98n4iGD7MYXMBVFcIO2mtB5voDuV_n@rabbitmq-cluster.rabbitmq.svc.cluster.local:5672
    ```
+   ![Vault Dashboard UI](1.png)
 
 2. Verify that the secret was successfully stored in Vault:
    ```bash
    kubectl exec -ti -n vault vault-0 -- vault kv get secret/rabbitmq
    ```
+   ![Vault Secret Details](2.png)
 
 ### 2. Deploy the Workload
 1. Deploy the Secret, ConfigMap, and the Deployment:
@@ -220,6 +222,8 @@ spec:
    ```
    > [!NOTE]
    > KEDA connects to Vault, uses the root token to authenticate, retrieves the secret from `secret/data/rabbitmq`, maps the `host` key to the RabbitMQ scaler parameter, and verifies the readiness of the ScaledObject.
+
+   ![KEDA Vault TriggerAuthentication Verification](3.png)
 
 ---
 
