@@ -6,6 +6,9 @@ Instead of hardcoding a connection string or referencing a KEDA `TriggerAuthenti
 - `hostFromEnv: RABBITMQ_URL`: Instructs KEDA to fetch the connection URL from the specified environment variable.
 - `scaleTargetRef.envSourceContainerName: consumer-program`: Tells KEDA which container in the target pod contains that environment variable.
 
+> [!NOTE]
+> While HashiCorp Vault is installed during the environment setup phase of this chapter, **it is not used** in this specific lab. This exercise focuses solely on KEDA's ability to resolve authentication directly from the target pod's environment variables.
+
 ---
 
 ## 🏗️ Architecture & Authentication Resolution
