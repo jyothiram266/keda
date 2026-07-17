@@ -216,6 +216,8 @@ spec:
    > [!WARNING]
    > Notice that `READY` is `False`. The KEDA operator controller log will show a secret-not-found error because KEDA is searching for `keda-rabbitmq-secret` in the `keda` namespace.
 
+   ![Initial Attempt (Failed Readiness)](1.png)
+
 ---
 
 ### 3. Configure the KEDA Operator
@@ -242,6 +244,8 @@ To resolve this, set the KEDA operator's environment variable `KEDA_CLUSTER_OBJE
    ```
    > [!NOTE]
    > Now `READY` is `True`. The operator successfully resolved the secret from the `default` namespace!
+
+   ![Successful Readiness after Operator Config](2.png)
 
 ---
 
