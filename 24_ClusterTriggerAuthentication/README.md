@@ -37,7 +37,20 @@ graph TD
 
 ### The Namespace Gotcha
 Because `ClusterTriggerAuthentication` is cluster-scoped, it has no native namespace. By default, KEDA resolves its secret references in the namespace where the KEDA operator itself is installed (usually `keda`).
-If the target Secret resides in a different namespace (e.g. `default`), KEDA will fail to locate it, and the `ScaledObject` will show `READY: False`. To fix this, we must configure KEDA operator's environment variable `KEDA_CLUSTER_OBJECT_NAMESPACE` to look in the target namespace.
+If the target Secret resides in a different namespace (e.g., `default`), KEDA will fail to locate it, and the `ScaledObject` will show `READY: False`. To fix this, we must configure KEDA operator's environment variable `KEDA_CLUSTER_OBJECT_NAMESPACE` to look in the target namespace.
+
+---
+
+## 📊 Comparison of KEDA Authentication Methods (Labs 21-24)
+
+Here is a comparison of the different credentials-handling models explored in Labs 21 through 24:
+
+| Lab | Authentication Resource | Where KEDA Resolves the Secret | Key Architectural Difference | Security/Operational Benefit |
+| :--- | :--- | :--- | :--- | :--- |
+| **Lab 21** | `TriggerAuthentication` | **Workload Container Environment** | KEDA reads the target Pod's environment variables (`env` matching `RABBITMQ_URL`) to find the credentials. | Simple, but requires the credential to be mounted/exposed directly as an environment variable inside the workload pod. |
+| **Lab 22** | `TriggerAuthentication` | **Kubernetes Secret** | KEDA references the Kubernetes Secret (`secretTargetRef`) directly. | Workloads do **not** need to expose this credential in their container environment. Only KEDA reads the secret directly from the Kubernetes API. |
+| **Lab 23** | `TriggerAuthentication` | **External Secret Store (HashiCorp Vault)** | KEDA uses a token to query Vault's API (`hashiCorpVault`) and retrieve the credential dynamically at runtime. | Maximum security. The secret does not even need to exist as a native Kubernetes Secret resource in the cluster. |
+| **Lab 24** | `ClusterTriggerAuthentication` | **Cluster-Scoped Secret** | Uses a cluster-scoped CRD (`ClusterTriggerAuthentication`) instead of namespace-scoped. | **Reusability.** Multiple `ScaledObject` resources across different namespaces can reuse this single authentication resource, reducing duplication. |
 
 ---
 
