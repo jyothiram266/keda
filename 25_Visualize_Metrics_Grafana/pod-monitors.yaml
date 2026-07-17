@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: keda-operator
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: keda-operator
+  namespaceSelector:
+    matchNames:
+      - keda
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+    relabelings:
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: keda-admission-webhooks
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: keda-admission-webhooks
+  namespaceSelector:
+    matchNames:
+      - keda
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+    relabelings:
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: keda-operator-metrics-apiserver
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: keda-operator-metrics-apiserver
+  namespaceSelector:
+    matchNames:
+      - keda
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+    relabelings:
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
