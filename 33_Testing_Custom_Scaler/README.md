@@ -30,6 +30,26 @@ graph TD
     HPA -->|4. Autoscale Pods| Consumer
 ```
 
+### Workflow Components & Lifecycle
+
+* **HTTP Admin API (Port `9090`)**:
+  * Simulates the administrator or system behavior setting the queue size.
+  * Exposes a `POST /api/queue/{len}` endpoint. For example, executing `curl -X POST localhost:9090/api/queue/15` sets the in-memory `CustomQueueLength` variable to `15`.
+
+* **In-Memory Queue State & Decrement Loop**:
+  * The custom scaler keeps track of the queue length in a global variable `CustomQueueLength`.
+  * A background worker routine runs concurrently, decrementing the queue length by `1` every minute to simulate consumers processing tasks.
+
+* **gRPC Server (Port `6000`)**:
+  * Implements KEDA's standard `ExternalScaler` service interface.
+  * `IsActive`: Returns `true` if `CustomQueueLength > 0`. If the queue is empty, KEDA scales the target down to `0` replicas.
+  * `GetMetricSpec`: Tells KEDA that the metric is named `custom-queue` and sets the target size (threshold) to `5` based on the ScaledObject metadata.
+  * `GetMetrics`: Feeds the KEDA Metrics Server with the current `CustomQueueLength` value.
+
+* **KEDA Operator & Kubernetes HPA**:
+  * KEDA queries the custom scaler via gRPC, translates the results, and dynamically updates the Kubernetes HPA.
+  * The HPA scales the **Consumer App** pods accordingly (e.g., `15 / 5` resulting in `3` replicas).
+
 ## Prerequisites
 
 
