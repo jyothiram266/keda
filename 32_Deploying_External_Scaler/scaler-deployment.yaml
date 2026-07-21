@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-scaler
+spec:
+  selector:
+    app: custom-scaler
+  ports:
+  - protocol: TCP
+    port: 9090
+    targetPort: 9090
+    name: http
+  - protocol: TCP
+    port: 6000
+    targetPort: 6000
+    name: grpc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-scaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-scaler
+  template:
+    metadata:
+      labels:
+        app: custom-scaler
+    spec:
+      containers:
+      - name: custom-scaler
+        imagePullPolicy: Always
+        image: ttl.sh/jyothiram-custom-scaler:1h
+        ports:
+        - containerPort: 9090
+          name: http
+        - containerPort: 6000
+          name: grpc

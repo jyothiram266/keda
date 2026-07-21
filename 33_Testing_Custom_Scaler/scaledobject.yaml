@@ -1,0 +1,12 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: go-http-server
+spec:
+  scaleTargetRef:
+    name: go-http-server
+  triggers:
+  - type: external
+    metadata:
+      scalerAddress: custom-scaler.default.svc.cluster.local:6000
+      queueLength: "5"

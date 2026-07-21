@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-http-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-http-server
+  template:
+    metadata:
+      labels:
+        app: go-http-server
+    spec:
+      containers:
+      - name: go-http-server
+        imagePullPolicy: Always
+        image: ttl.sh/jyothiram-go-http-server:2h
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            cpu: "20m"
+          limits:
+            cpu: "50m"

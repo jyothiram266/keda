@@ -1,0 +1,56 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-rabbitmq-conn
+  namespace: default
+spec:
+  secretTargetRef:
+  - parameter: host
+    name: keda-rabbitmq-secret
+    key: host
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-rabbitmq-conn-2
+  namespace: default
+spec:
+  secretTargetRef:
+  - parameter: host
+    name: keda-rabbitmq-secret-2
+    key: host
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-rabbitmq
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: consumer-program
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  advanced:
+    scalingModifiers:
+      formula: "(metric1 + metric2) / 2"
+      target: "5"
+      metricType: "AverageValue"
+  triggers:
+  - type: rabbitmq
+    name: metric1
+    metadata:
+      protocol: amqp
+      queueName: testqueue
+      queueLength: "5"
+    authenticationRef:
+      name: keda-trigger-auth-rabbitmq-conn
+  - type: rabbitmq
+    name: metric2
+    metadata:
+      protocol: amqp
+      queueName: testqueue
+      queueLength: "10"
+    authenticationRef:
+      name: keda-trigger-auth-rabbitmq-conn-2

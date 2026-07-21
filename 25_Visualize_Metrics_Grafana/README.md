@@ -95,7 +95,7 @@ Verify that KEDA targets are discovered by Prometheus:
    ```
 2. Access Grafana at [http://localhost:3000](http://localhost:3000) using the credentials:
    * **Username:** `admin`
-   * **Password:** `prom-operator`
+   * **Password:** (Fetch using: `kubectl get secret prometheus-stack-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 --decode`)
 3. Navigate to **Dashboards** -> **New** -> **Import**.
 4. Upload or copy-paste the contents of the `keda-dashboard.json` file in this directory, select `Prometheus` as the datasource, and click **Import**.
 
@@ -128,7 +128,7 @@ Verify that KEDA targets are discovered by Prometheus:
 ### 5. Generate Messages & Observe AutoScaling
 1. Publish 20 messages to the queue:
    ```bash
-   sed 's/value: "1"/value: "20"/' producer.yaml | kubectl apply -f -
+   sed 's/value: "1"/value: "20"/' producer.yaml | kubectl create -f -
    ```
 
 2. Monitor the autoscaling behavior inside the Grafana KEDA Dashboard.
