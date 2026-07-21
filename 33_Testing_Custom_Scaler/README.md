@@ -21,10 +21,10 @@ graph TD
     HPA["Kubernetes HPA"]:::k8s
     Consumer["Consumer App (go-http-server)"]:::k8s
 
-    User -->|1. Set Queue Length (POST)| API
+    User -->|1. Set Queue Length via POST| API
     API -->|Update Value| MetricStore
     Loop -->|Decrement Value by 1| MetricStore
-    KEDA -->|2. Query Metrics (GetMetrics/IsActive)| gRPC
+    KEDA -->|2. Query Metrics| gRPC
     gRPC -->|Read State| MetricStore
     KEDA -->|3. Feed Metrics| HPA
     HPA -->|4. Autoscale Pods| Consumer
