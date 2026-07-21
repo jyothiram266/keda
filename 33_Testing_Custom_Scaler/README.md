@@ -3,7 +3,7 @@
 
 ## Architecture Workflow
 
-Below is the sequence diagram illustrating how KEDA interacts with our custom scaler to autoscale the consumer application:
+Below is the architecture diagram illustrating how KEDA interacts with our custom scaler to autoscale the consumer application:
 
 ```mermaid
 graph TD
@@ -12,14 +12,14 @@ graph TD
     classDef k8s fill:#81a1c1,stroke:#81a1c1,stroke-width:2px,color:#ffffff;
     classDef custom fill:#a3be8c,stroke:#a3be8c,stroke-width:2px,color:#ffffff;
 
-    User("Client / Operator (curl)"):::client
-    API("Custom Scaler HTTP API (Port 9090)"):::custom
+    User["Client / Operator (curl)"]:::client
+    API["Custom Scaler HTTP API (Port 9090)"]:::custom
     MetricStore[("Custom Queue State")]:::custom
-    Loop("Background Decrement Loop (60s)"):::custom
-    gRPC("Custom Scaler gRPC Server (Port 6000)"):::custom
-    KEDA("KEDA Operator"):::k8s
-    HPA("Kubernetes HPA"):::k8s
-    Consumer("Consumer App (go-http-server)"):::k8s
+    Loop["Background Decrement Loop (60s)"]:::custom
+    gRPC["Custom Scaler gRPC Server (Port 6000)"]:::custom
+    KEDA["KEDA Operator"]:::k8s
+    HPA["Kubernetes HPA"]:::k8s
+    Consumer["Consumer App (go-http-server)"]:::k8s
 
     User -->|1. Set Queue Length (POST)| API
     API -->|Update Value| MetricStore
